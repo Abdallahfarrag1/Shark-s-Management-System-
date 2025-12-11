@@ -28,7 +28,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend",
         policy => policy
-            .WithOrigins("http://localhost:4200")
+             .WithOrigins(
+     "http://localhost:4200",
+     "https://shark-s-management-system.vercel.app"
+ )
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials());
@@ -182,3 +185,4 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
