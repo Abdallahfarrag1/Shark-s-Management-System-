@@ -104,6 +104,9 @@ namespace backend.Services
                 UserId = user.Id,
                 Email = user.Email!,
                 FullName = $"{user.FirstName} {user.LastName}",
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                PhoneNumber = user.PhoneNumber,
                 Roles = roles.ToList(),
                 ManagedBranchId = user.BranchId,
                 Message = "User created and logged in successfully"
@@ -135,6 +138,9 @@ namespace backend.Services
                 RefreshTokenExpiration = user.RefreshTokenExpiryTime.Value,
                 Email = user.Email!,
                 FullName = $"{user.FirstName} {user.LastName}",
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                PhoneNumber = user.PhoneNumber,
                 Roles = roles.ToList(),
                 ManagedBranchId = user.BranchId,
                 Message = "Success"
@@ -181,6 +187,9 @@ namespace backend.Services
                 UserId = user.Id,
                 Email = user.Email!,
                 FullName = $"{user.FirstName} {user.LastName}",
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                PhoneNumber = user.PhoneNumber,
                 Roles = roles.ToList(),
                 ManagedBranchId = user.BranchId,
                 Message = "Success"
@@ -230,6 +239,119 @@ namespace backend.Services
                 IsAuthenticated = true,
                 Message = "Password changed successfully"
             };
+        }
+
+        // ================ CHANGE PASSWORD FOR USER (admin or owner) ================
+        public async Task<AuthResponseDto> ChangePasswordForUserAsync(string userId, ChangePasswordDto model)
+        {
+            var target = await _userManager.FindByIdAsync(userId);
+            if (target == null) return new AuthResponseDto { Message = "User not found" };
+
+            var httpUser = _httpContextAccessor.HttpContext?.User;
+            var callerId = httpUser?.FindFirstValue(ClaimTypes.NameIdentifier);
+            var isAdmin = httpUser?.IsInRole("Admin") == true;
+
+            if (!isAdmin && callerId != userId)
+                return new AuthResponseDto { Message = "Forbidden" };
+
+            if (!isAdmin)
+            {
+                var change = await _userManager.ChangePasswordAsync(target, model.CurrentPassword, model.NewPassword);
+                if (!change.Succeeded)
+                    return new AuthResponseDto { Message = string.Join(" | ", change.Errors.Select(e => e.Description)) };
+
+                return new AuthResponseDto { IsAuthenticated = true, Message = "Password changed successfully" };
+            }
+            else
+            {
+                var token = await _userManager.GeneratePasswordResetTokenAsync(target);
+                var reset = await _userManager.ResetPasswordAsync(target, token, model.NewPassword);
+                if (!reset.Succeeded)
+                    return new AuthResponseDto { Message = string.Join(" | ", reset.Errors.Select(e => e.Description)) };
+
+                return new AuthResponseDto { IsAuthenticated = true, Message = "Password reset by admin" };
+            }
+        }
+
+        // ================= UPDATE USER PROFILE ====================
+        public async Task<AuthResponseDto> UpdateUserAsync(string userId, UpdateUserDto model)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return new AuthResponseDto { Message = "User not found" };
+
+            var httpUser = _httpContextAccessor.HttpContext?.User;
+            var callerId = httpUser?.FindFirstValue(ClaimTypes.NameIdentifier);
+            var isAdmin = httpUser?.IsInRole("Admin") == true;
+
+            if (!isAdmin && callerId != userId)
+                return new AuthResponseDto { Message = "Forbidden" };
+
+            if (!string.IsNullOrWhiteSpace(model.FirstName)) user.FirstName = model.FirstName;
+            if (!string.IsNullOrWhiteSpace(model.LastName)) user.LastName = model.LastName;
+
+            if (!string.IsNullOrWhiteSpace(model.PhoneNumber))
+            {
+                var phoneRes = await _userManager.SetPhoneNumberAsync(user, model.PhoneNumber);
+                if (!phoneRes.Succeeded)
+                    return new AuthResponseDto { Message = string.Join(" | ", phoneRes.Errors.Select(e => e.Description)) };
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.Email) && model.Email != user.Email)
+            {
+                var emailRes = await _userManager.SetEmailAsync(user, model.Email);
+                if (!emailRes.Succeeded)
+                    return new AuthResponseDto { Message = string.Join(" | ", emailRes.Errors.Select(e => e.Description)) };
+
+                user.UserName = model.Email;
+            }
+
+            await _userManager.UpdateAsync(user);
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            return new AuthResponseDto
+            {
+                IsAuthenticated = true,
+                Message = "User updated",
+                UserId = user.Id,
+                Email = user.Email,
+                FullName = $"{user.FirstName} {user.LastName}",
+                Roles = roles.ToList(),
+                ManagedBranchId = user.BranchId
+            };
+        }
+
+        // ================= DELETE / ANONYMIZE USER ====================
+        public async Task<AuthResponseDto> DeleteUserAsync(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return new AuthResponseDto { Message = "User not found" };
+
+            var httpUser = _httpContextAccessor.HttpContext?.User;
+            var callerId = httpUser?.FindFirstValue(ClaimTypes.NameIdentifier);
+            var isAdmin = httpUser?.IsInRole("Admin") == true;
+
+            if (!isAdmin && callerId != userId)
+                return new AuthResponseDto { Message = "Forbidden" };
+
+            // Anonymize instead of hard delete to preserve relations
+            user.Email = $"deleted+{Guid.NewGuid():N}@local.invalid";
+            user.UserName = user.Email;
+            user.FirstName = string.Empty;
+            user.LastName = string.Empty;
+            user.PhoneNumber = null;
+            user.RefreshToken = null;
+            user.RefreshTokenExpiryTime = null;
+
+            user.LockoutEnabled = true;
+            user.LockoutEnd = DateTimeOffset.UtcNow.AddYears(100);
+
+            await _userManager.UpdateAsync(user);
+
+            var roles = await _userManager.GetRolesAsync(user);
+            if (roles.Any()) await _userManager.RemoveFromRolesAsync(user, roles);
+
+            return new AuthResponseDto { IsAuthenticated = false, Message = "Account deleted (anonymized)" };
         }
 
         // ================= VALIDATE TOKEN ====================

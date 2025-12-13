@@ -1,0 +1,455 @@
+<div class="space-y-6">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl md:text-3xl font-bold" [style.color]="'var(--text-primary)'">
+        {{ langService.t().branchesManagement }}
+      </h1>
+      <p class="text-sm md:text-base mt-1" [style.color]="'var(--text-secondary)'">
+        {{ langService.t().manageLocations }}
+      </p>
+    </div>
+    <button class="btn-primary" (click)="openAddModal()">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      {{ langService.t().addBranch }}
+    </button>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="card p-4 md:p-6">
+      <p class="text-xs md:text-sm" [style.color]="'var(--text-secondary)'">
+        {{ langService.t().totalBranches }}
+      </p>
+      <h3 class="text-2xl md:text-3xl font-bold mt-1" [style.color]="'var(--text-primary)'">
+        {{ branches().length }}
+      </h3>
+    </div>
+    <div class="card p-4 md:p-6">
+      <p class="text-xs md:text-sm" [style.color]="'var(--text-secondary)'">
+        {{ langService.t().active }}
+      </p>
+      <h3 class="text-2xl md:text-3xl font-bold mt-1 text-green-600">
+        {{ getActiveBranches() }}
+      </h3>
+    </div>
+    <div class="card p-4 md:p-6">
+      <p class="text-xs md:text-sm" [style.color]="'var(--text-secondary)'">
+        {{ langService.t().inactive }}
+      </p>
+      <h3 class="text-2xl md:text-3xl font-bold mt-1 text-orange-600">
+        {{ getInactiveBranches() }}
+      </h3>
+    </div>
+  </div>
+
+  <!-- Branches List -->
+  <div class="card">
+    <div class="p-4 md:p-6 border-b" [style.border-color]="'var(--border-light)'">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h2 class="text-lg font-semibold" [style.color]="'var(--text-primary)'">
+          {{ langService.t().allBranches }}
+        </h2>
+        <div class="flex gap-2">
+          <!-- Search Input -->
+          <input
+            type="text"
+            [(ngModel)]="searchTerm"
+            [placeholder]="langService.t().search + '...'"
+            class="input text-sm py-2 px-3 w-full sm:w-64"
+          />
+          <button class="btn-outline text-sm" (click)="exportData()">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            Export
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead
+          class="border-b"
+          [style.border-color]="'var(--border-light)'"
+          [style.background-color]="'var(--bg-tertiary)'"
+        >
+          <tr>
+            <th
+              class="px-4 py-3 text-left text-xs font-medium uppercase"
+              [style.color]="'var(--text-tertiary)'"
+            >
+              {{ langService.t().branchName }}
+            </th>
+            <th
+              class="px-4 py-3 text-left text-xs font-medium uppercase"
+              [style.color]="'var(--text-tertiary)'"
+            >
+              {{ langService.t().location }}
+            </th>
+            <th
+              class="px-4 py-3 text-left text-xs font-medium uppercase"
+              [style.color]="'var(--text-tertiary)'"
+            >
+              {{ langService.t().manager }}
+            </th>
+            <th
+              class="px-4 py-3 text-left text-xs font-medium uppercase"
+              [style.color]="'var(--text-tertiary)'"
+            >
+              {{ langService.t().staff }}
+            </th>
+            <th
+              class="px-4 py-3 text-left text-xs font-medium uppercase"
+              [style.color]="'var(--text-tertiary)'"
+            >
+              {{ langService.t().status }}
+            </th>
+            <th
+              class="px-4 py-3 text-left text-xs font-medium uppercase"
+              [style.color]="'var(--text-tertiary)'"
+            >
+              {{ langService.t().revenue }}
+            </th>
+            <th
+              class="px-4 py-3 text-left text-xs font-medium uppercase"
+              [style.color]="'var(--text-tertiary)'"
+            >
+              {{ langService.t().actions }}
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y" [style.divide-color]="'var(--border-light)'">
+          @if (isLoading()) { @for (item of [1, 2, 3, 4, 5]; track item) {
+          <tr>
+            <td class="px-4 py-3">
+              <app-ui-skeleton width="150px" height="40px"></app-ui-skeleton>
+            </td>
+            <td class="px-4 py-3">
+              <app-ui-skeleton width="120px" height="20px"></app-ui-skeleton>
+            </td>
+            <td class="px-4 py-3">
+              <app-ui-skeleton width="100px" height="20px"></app-ui-skeleton>
+            </td>
+            <td class="px-4 py-3">
+              <app-ui-skeleton width="50px" height="20px"></app-ui-skeleton>
+            </td>
+            <td class="px-4 py-3">
+              <app-ui-skeleton
+                width="80px"
+                height="24px"
+                className="rounded-full"
+              ></app-ui-skeleton>
+            </td>
+            <td class="px-4 py-3">
+              <app-ui-skeleton width="80px" height="20px"></app-ui-skeleton>
+            </td>
+            <td class="px-4 py-3">
+              <app-ui-skeleton width="100px" height="32px"></app-ui-skeleton>
+            </td>
+          </tr>
+          } } @else { @for (branch of filteredBranches(); track branch.id) {
+          <tr class="hover:bg-opacity-50 dark:hover:bg-opacity-50 transition-colors cursor-pointer">
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-3">
+                @if (branch.photo) {
+                <img
+                  [src]="branch.photo"
+                  loading="lazy"
+                  class="w-10 h-10 rounded-lg object-cover"
+                  [alt]="branch.name"
+                />
+                } @else {
+                <div
+                  class="w-10 h-10 rounded-lg flex items-center justify-center text-white font-semibold"
+                  style="background: var(--color-primary-500)"
+                >
+                  {{ branch.name.charAt(0) }}
+                </div>
+                }
+                <span class="font-medium" [style.color]="'var(--text-primary)'">{{
+                  branch.name
+                }}</span>
+              </div>
+            </td>
+            <td class="px-4 py-3 text-sm" [style.color]="'var(--text-secondary)'">
+              {{ branch.location }}
+            </td>
+            <td class="px-4 py-3 text-sm" [style.color]="'var(--text-secondary)'">
+              {{ branch.managerName || '-' }}
+            </td>
+            <td class="px-4 py-3 text-sm" [style.color]="'var(--text-secondary)'">
+              {{ branch.staff || 0 }}
+            </td>
+            <td class="px-4 py-3">
+              <span
+                class="badge"
+                [class.badge-success]="branch.status === 'Active'"
+                [class.badge-warning]="branch.status === 'Inactive'"
+              >
+                {{ branch.status || 'Active' }}
+              </span>
+            </td>
+            <td class="px-4 py-3 font-medium" [style.color]="'var(--text-primary)'">
+              LE{{ branch.revenue || 0 }}
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex gap-2">
+                <button
+                  class="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  (click)="openEditModal(branch)"
+                >
+                  Edit
+                </button>
+                <button
+                  class="text-red-600 hover:text-red-800 text-sm font-medium"
+                  (click)="openDeleteModal(branch)"
+                >
+                  Delete
+                </button>
+              </div>
+            </td>
+          </tr>
+          } }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Add/Edit Branch Modal -->
+    @if (showModal()) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      (click)="closeModal()"
+    >
+      <div
+        class="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-xl"
+        [style.background-color]="'var(--bg-secondary)'"
+        (click)="$event.stopPropagation()"
+      >
+        <div
+          class="p-6 border-b flex items-center justify-between"
+          [style.border-color]="'var(--border-light)'"
+        >
+          <h3 class="text-xl font-bold" [style.color]="'var(--text-primary)'">
+            {{ isEditMode() ? 'Edit' : 'Add New' }} Branch
+          </h3>
+          <button
+            (click)="closeModal()"
+            class="transition-colors hover:opacity-70"
+            [style.color]="'var(--text-tertiary)'"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+        <div class="p-6">
+          <form (ngSubmit)="saveBranch()" class="space-y-4">
+            <!-- Photo Upload -->
+            <div>
+              <label class="block text-sm font-medium mb-2" [style.color]="'var(--text-primary)'"
+                >Branch Photo</label
+              >
+              <div class="flex items-center gap-4">
+                @if (formData().photo) {
+                <img
+                  [src]="formData().photo"
+                  loading="lazy"
+                  class="w-20 h-20 rounded-lg object-cover"
+                />
+                } @else {
+                <div
+                  class="w-20 h-20 rounded-lg flex items-center justify-center text-2xl text-white"
+                  style="background: var(--color-primary-500)"
+                >
+                  🏢
+                </div>
+                }
+                <div class="flex-1">
+                  <input
+                    type="file"
+                    #fileInput
+                    (change)="onFileSelected($event)"
+                    accept="image/*"
+                    class="hidden"
+                  />
+                  <button
+                    type="button"
+                    (click)="fileInput.click()"
+                    class="btn-outline text-sm w-full"
+                  >
+                    Choose Photo
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Branch Name -->
+            <div>
+              <label class="block text-sm font-medium mb-2" [style.color]="'var(--text-primary)'"
+                >Branch Name *</label
+              >
+              <input
+                type="text"
+                [(ngModel)]="formData().name"
+                name="name"
+                required
+                class="input w-full"
+                placeholder="Enter branch name"
+              />
+            </div>
+
+            <!-- Location -->
+            <div>
+              <label class="block text-sm font-medium mb-2" [style.color]="'var(--text-primary)'"
+                >Location *</label
+              >
+              <input
+                type="text"
+                [(ngModel)]="formData().location"
+                name="location"
+                required
+                class="input w-full"
+                placeholder="Enter location"
+              />
+            </div>
+
+            <!-- Manager Selection -->
+            <div>
+              <label class="block text-sm font-medium mb-2" [style.color]="'var(--text-primary)'"
+                >Select Manager *</label
+              >
+
+              <!-- Selected Manager Display (when manager is selected) -->
+              @if (selectedManager()) {
+              <div
+                class="flex items-center gap-2 p-3 rounded-lg border"
+                [style.border-color]="'var(--border-light)'"
+                [style.background-color]="'var(--bg-tertiary)'"
+              >
+                <div class="flex-1">
+                  <p class="text-sm font-medium" [style.color]="'var(--text-primary)'">
+                    {{ selectedManager()?.email }}
+                  </p>
+                  <p class="text-xs" [style.color]="'var(--text-tertiary)'">
+                    {{ selectedManager()?.firstName }} {{ selectedManager()?.lastName }}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  (click)="clearManagerSelection()"
+                  class="text-red-600 hover:text-red-800"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+              } @else {
+              <!-- Searchable Dropdown (when no manager is selected) -->
+              <div class="relative">
+                <div class="relative">
+                  <input
+                    type="text"
+                    [(ngModel)]="managerSearchTerm"
+                    name="managerSearch"
+                    (focus)="showManagerDropdown.set(true)"
+                    class="input w-full pl-10"
+                    placeholder="Search by email..."
+                    autocomplete="off"
+                  />
+                  <svg
+                    class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2"
+                    [style.color]="'var(--text-tertiary)'"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </div>
+
+                <!-- Dropdown List -->
+                @if (showManagerDropdown() && filteredManagers().length > 0) {
+                <div
+                  class="absolute z-10 w-full mt-1 rounded-lg border shadow-lg max-h-60 overflow-y-auto"
+                  [style.background-color]="'var(--bg-secondary)'"
+                  [style.border-color]="'var(--border-light)'"
+                >
+                  @for (user of filteredManagers(); track user.id) {
+                  <button
+                    type="button"
+                    (click)="selectManager(user)"
+                    class="w-full text-left px-4 py-3 hover:bg-opacity-50 transition-colors border-b last:border-b-0"
+                    [style.border-color]="'var(--border-light)'"
+                  >
+                    <p class="text-sm font-medium" [style.color]="'var(--text-primary)'">
+                      {{ user.email }}
+                    </p>
+                    <p class="text-xs" [style.color]="'var(--text-tertiary)'">
+                      {{ user.firstName }} {{ user.lastName }}
+                    </p>
+                  </button>
+                  }
+                </div>
+                } @if (showManagerDropdown() && filteredManagers().length === 0) {
+                <div
+                  class="absolute z-10 w-full mt-1 rounded-lg border shadow-lg p-4 text-center"
+                  [style.background-color]="'var(--bg-secondary)'"
+                  [style.border-color]="'var(--border-light)'"
+                >
+                  <p class="text-sm" [style.color]="'var(--text-tertiary)'">No users found</p>
+                </div>
+                }
+              </div>
+              }
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-3 pt-4">
+              <button type="button" (click)="closeModal()" class="btn-outline flex-1">
+                Cancel
+              </button>
+              <button type="submit" class="btn-primary flex-1">
+                {{ isEditMode() ? 'Update' : 'Create' }} Branch
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    }
+
+    <!-- Delete Confirmation Modal -->
+    @if (showDeleteModal()) {
+    <app-delete-confirmation-modal
+      [entityType]="'branch'"
+      [entityName]="branchToDelete()?.name || ''"
+      (confirmed)="confirmDelete()"
+      (cancelled)="closeDeleteModal()"
+    />
+    }
+  </div>
+</div>

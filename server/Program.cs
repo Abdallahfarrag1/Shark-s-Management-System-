@@ -28,10 +28,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend",
         policy => policy
-             .WithOrigins(
-     "http://localhost:4200",
-     "https://shark-s-management-system.vercel.app"
- )
+            .WithOrigins("http://localhost:4200")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials());
@@ -79,6 +76,9 @@ builder.Services.AddScoped<IQueueService, QueueService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IFeedbackService, FeedbackService>();
 
+// Register analytics
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+
 builder.Services.AddScoped<PayPalService>();
 builder.Services.AddHttpContextAccessor();
 
@@ -104,11 +104,10 @@ authBuilder.AddJwtBearer(options =>
     options.RequireHttpsMetadata = false;
     options.TokenValidationParameters = new TokenValidationParameters()
     {
-        // Do not validate issuer or audience - allow any
-        ValidateIssuer = false,
-        ValidateAudience = false,
-        // Still validate the signature
-        ValidateIssuerSigningKey = true,
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidAudience = validAudience,
+        ValidIssuer = validIssuer,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
     };
 });
@@ -164,7 +163,6 @@ app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 // =========================
@@ -175,14 +173,25 @@ using (var scope = app.Services.CreateScope())
     var services = scope.ServiceProvider;
     try
     {
+        // Ensure Orders.CustomerName column exists to prevent runtime SQL errors
+        var db = services.GetRequiredService<AppDbContext>();
+        var conn = db.Database.GetDbConnection();
+        conn.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"IF COL_LENGTH('dbo.Orders','CustomerName') IS NULL
+BEGIN
+    ALTER TABLE dbo.Orders ADD CustomerName NVARCHAR(256) NULL
+END";
+        cmd.ExecuteNonQuery();
+        conn.Close();
+
         await DbSeeder.SeedRolesAndAdminAsync(services);
     }
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Error seeding database");
+        logger.LogError(ex, "Error seeding database or ensuring schema");
     }
 }
 
 app.Run();
-

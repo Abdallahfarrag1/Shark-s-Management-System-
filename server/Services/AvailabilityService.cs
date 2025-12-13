@@ -11,11 +11,13 @@ namespace backend.Services
     {
         private readonly AppDbContext _db;
         private readonly ILogger<AvailabilityService> _logger;
+        private readonly IBarberScheduleService _scheduleService;
 
-        public AvailabilityService(AppDbContext db, ILogger<AvailabilityService> logger)
+        public AvailabilityService(AppDbContext db, ILogger<AvailabilityService> logger, IBarberScheduleService scheduleService)
         {
             _db = db;
             _logger = logger;
+            _scheduleService = scheduleService;
         }
 
         public async Task<List<AvailableBarberDto>> GetAvailableBarbersAsync(int branchId, DateTime date, TimeSpan time)
@@ -25,9 +27,7 @@ namespace backend.Services
 
         public async Task<List<AvailableBarberDto>> GetAvailableByDateAsync(int branchId, DateTime date, TimeSpan time)
         {
-            string dayName = date.DayOfWeek.ToString();
-
-            // 1) هات كل الحلاقين في الفرع
+            // 1) get all barbers in branch
             var barbers = await _db.Barbers
                 .Where(b => b.BranchId == branchId)
                 .ToListAsync();
@@ -36,34 +36,22 @@ namespace backend.Services
 
             foreach (var barber in barbers)
             {
-                // Load schedule
-                var scheduleRecord = await _db.BarberSchedules
-                    .FirstOrDefaultAsync(s => s.BarberId == barber.Id);
-
-                if (scheduleRecord == null || string.IsNullOrWhiteSpace(scheduleRecord.WeeklyScheduleJson))
+                bool isWorking = await _scheduleService.IsBarberAvailableAt(barber.Id, date, time);
+                if (!isWorking)
                     continue;
 
-                Dictionary<string, DailyScheduleDto>? weekly = null;
+                // check for conflicting bookings at the requested slot
+                bool hasBooking = await _db.Bookings.AnyAsync(bk =>
+                    bk.BarberId == barber.Id &&
+                    bk.StartAt.Date == date.Date &&
+                    time >= bk.StartAt.TimeOfDay &&
+                    time < bk.EndAt.TimeOfDay &&
+                    bk.Status != "Rejected"
+                );
 
-                try
-                {
-                    weekly = JsonSerializer.Deserialize<Dictionary<string, DailyScheduleDto>>(scheduleRecord.WeeklyScheduleJson);
-                }
-                catch
-                {
-                    continue;
-                }
-
-                if (weekly == null || !weekly.ContainsKey(dayName))
+                if (hasBooking)
                     continue;
 
-                var day = weekly[dayName];
-
-                // check if working
-                if (!day.IsWorking)
-                    continue;
-
-                // add barber to available list
                 available.Add(new AvailableBarberDto
                 {
                     BarberId = barber.Id,

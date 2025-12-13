@@ -1,0 +1,138 @@
+<div class="bg-white min-h-screen w-full">
+  <div class="container mx-auto px-4 py-8">
+    <div class="text-center mb-12">
+      <h1 class="text-4xl font-bold text-primary mb-2">
+        {{ t().hairstyleRecommender }}
+      </h1>
+      <p class="text-gray-500 text-lg">{{ t().hairstyleSubtitle }}</p>
+    </div>
+
+    <div
+      class="grid grid-cols-1 lg:grid-cols-2 gap-8"
+      *ngIf="authService.isAuthenticated; else loginRequired"
+    >
+      <!-- Upload Panel -->
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <div
+          class="border-2 border-dashed border-gray-300 rounded-xl min-h-[400px] flex items-center justify-center relative transition-all duration-300 overflow-hidden"
+          [class.border-primary]="isDragging"
+          [class.bg-primary]="isDragging"
+          [class.bg-opacity-5]="isDragging"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)"
+        >
+          <!-- Placeholder -->
+          <div *ngIf="!previewUrl()" class="text-center p-8 cursor-pointer clickable-area group">
+            <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">📸</div>
+            <h3 class="text-xl font-semibold text-gray-800 mb-2">{{ t().uploadPhoto }}</h3>
+            <p class="text-gray-400">{{ t().dragDropWrapper }}</p>
+            <input
+              type="file"
+              (change)="onFileSelected($event)"
+              accept="image/*"
+              class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            />
+          </div>
+
+          <!-- Preview -->
+          <img
+            [src]="previewUrl()"
+            loading="lazy"
+            alt="Original"
+            class="w-full h-full object-cover rounded-lg"
+          />
+          <button
+            (click)="fileInput.click()"
+            class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-70 text-white px-4 py-2 rounded-full backdrop-blur-sm hover:bg-opacity-90 transition-colors shadow-lg"
+          >
+            {{ t().changePhoto }}
+          </button>
+          <input
+            #fileInput
+            type="file"
+            (change)="onFileSelected($event)"
+            accept="image/*"
+            class="hidden"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls Panel -->
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col">
+      <div class="mb-8">
+        <h3 class="text-gray-800 text-xl font-semibold mb-4">{{ t().selectHairstyle }}</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <button
+            *ngFor="let type of hairTypes"
+            class="p-3 rounded-lg border text-sm transition-all duration-200 text-center"
+            [class.bg-primary]="selectedHairType() === type.id"
+            [class.border-primary]="selectedHairType() === type.id"
+            [class.text-white]="selectedHairType() === type.id"
+            [class.bg-gray-50]="selectedHairType() !== type.id"
+            [class.border-gray-200]="selectedHairType() !== type.id"
+            [class.text-gray-600]="selectedHairType() !== type.id"
+            [class.hover:bg-gray-100]="selectedHairType() !== type.id"
+            (click)="selectHairType(type.id)"
+          >
+            {{ langService.currentLang() === 'ar' ? type.arabicLabel : type.label }}
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-auto">
+        <button
+          class="w-full py-4 bg-primary text-white rounded-xl font-bold text-lg shadow-lg shadow-primary/30 hover:bg-opacity-90 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
+          [disabled]="!previewUrl() || isLoading()"
+          (click)="generateHairstyle()"
+        >
+          <ng-container *ngIf="!isLoading()">{{ t().generateNewLook }}</ng-container>
+          <ng-container *ngIf="isLoading()">{{ t().processing }}</ng-container>
+        </button>
+
+        <div
+          *ngIf="error()"
+          class="mt-4 p-3 bg-red-50 text-red-600 rounded-lg text-center border border-red-100 text-sm"
+        >
+          {{ error() }}
+        </div>
+      </div>
+
+      <!-- Result -->
+      <div *ngIf="generatedImageUrl()" class="mt-8 pt-8 border-t border-gray-100 animate-fade-in">
+        <h3 class="text-gray-800 text-xl font-semibold mb-4">{{ t().yourNewLook }}</h3>
+
+        <div class="rounded-xl overflow-hidden shadow-lg mb-6">
+          <img
+            [src]="generatedImageUrl()"
+            loading="lazy"
+            alt="Generated Hairstyle"
+            class="w-full h-auto block"
+          />
+        </div>
+
+        <div class="bg-gray-50 border-l-4 border-primary p-4 rounded-r-lg">
+          <h4 class="text-gray-900 font-medium mb-2">{{ t().barberNote }} ✂️</h4>
+          <p class="text-gray-600 leading-relaxed text-sm">{{ currentRecommendation }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #loginRequired>
+  <div
+    class="flex flex-col items-center justify-center p-12 bg-white rounded-2xl shadow-sm border border-gray-100 mt-8 text-center"
+  >
+    <div class="text-6xl mb-6">🔒</div>
+    <h2 class="text-2xl font-bold text-gray-800 mb-2">{{ t().hairstyleRecommender }}</h2>
+    <p class="text-gray-500 mb-8 max-w-md">{{ t().loginToUseAI }}</p>
+    <a
+      routerLink="/auth/login"
+      class="px-8 py-3 bg-primary text-white rounded-xl font-bold hover:bg-opacity-90 transition-all shadow-lg hover:shadow-xl"
+    >
+      {{ t().loginNow }}
+    </a>
+  </div>
+</ng-template>

@@ -1,4 +1,3 @@
-
 namespace backend.Models
 {
     public class Branch
@@ -12,6 +11,5 @@ namespace backend.Models
         public ApplicationUser? Manager { get; set; }
         public string? ImageUrl { get; set; }
         public List<Barber> Staff { get; set; } = new();
-        public List<Service> Services { get; set; } = new();
     }
 }

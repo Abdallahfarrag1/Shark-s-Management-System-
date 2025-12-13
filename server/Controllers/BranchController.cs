@@ -58,4 +58,12 @@ public class BranchController : ControllerBase
     {
         return await _branchService.DeleteAsync(id) ? Ok(new { message = "Deleted" }) : NotFound();
     }
+
+    [Authorize(Roles = "Admin")]
+    [HttpDelete("{id}/force")]
+    public async Task<IActionResult> ForceDelete(int id)
+    {
+        var ok = await _branchService.ForceDeleteAsync(id);
+        return ok ? Ok(new { message = "Branch and dependents deleted" }) : NotFound();
+    }
 }

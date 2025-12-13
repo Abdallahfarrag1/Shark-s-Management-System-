@@ -67,8 +67,34 @@ namespace BarberBooking.API.Services
             var b = await _db.Barbers.FindAsync(id);
             if (b == null) return false;
 
+            using var trx = await _db.Database.BeginTransactionAsync();
+
+            // Remove schedules referencing this barber
+            var schedules = _db.BarberSchedules.Where(s => s.BarberId == id);
+            _db.BarberSchedules.RemoveRange(schedules);
+
+            // Clear assigned barber on chairs
+            var chairs = await _db.Chairs.Where(c => c.AssignedBarberId == id).ToListAsync();
+            foreach (var c in chairs)
+            {
+                c.AssignedBarberId = null;
+                _db.Chairs.Update(c);
+            }
+
+            // Clear barber info on bookings (to avoid FK/consistency issues)
+            var bookings = await _db.Bookings.Where(x => x.BarberId == id).ToListAsync();
+            foreach (var bk in bookings)
+            {
+                bk.BarberId = 0;
+                bk.BarberName = string.Empty;
+                _db.Bookings.Update(bk);
+            }
+
+            // Finally remove barber
             _db.Barbers.Remove(b);
+
             await _db.SaveChangesAsync();
+            await trx.CommitAsync();
             return true;
         }
 

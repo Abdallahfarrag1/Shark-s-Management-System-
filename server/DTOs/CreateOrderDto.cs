@@ -29,6 +29,9 @@ namespace backend.DTOs
         public string Address { get; set; } = string.Empty;
 
         [Required]
+        public string CustomerName { get; set; } = string.Empty;
+
+        [Required]
         public string PaymentMethod { get; set; } = "None";
 
         [Required]

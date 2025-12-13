@@ -470,6 +470,10 @@ namespace backend.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("CustomerName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("PaymentMethod")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -605,8 +609,8 @@ namespace backend.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("BranchId")
-                        .HasColumnType("int");
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -618,8 +622,6 @@ namespace backend.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("BranchId");
 
                     b.ToTable("Services");
                 });
@@ -726,13 +728,6 @@ namespace backend.Migrations
                     b.Navigation("Order");
                 });
 
-            modelBuilder.Entity("backend.Models.Service", b =>
-                {
-                    b.HasOne("backend.Models.Branch", null)
-                        .WithMany("Services")
-                        .HasForeignKey("BranchId");
-                });
-
             modelBuilder.Entity("backend.Models.Barber", b =>
                 {
                     b.Navigation("Schedules");
@@ -740,8 +735,6 @@ namespace backend.Migrations
 
             modelBuilder.Entity("backend.Models.Branch", b =>
                 {
-                    b.Navigation("Services");
-
                     b.Navigation("Staff");
                 });
 
