@@ -1,0 +1,152 @@
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+    <h1 class="text-2xl font-bold" [style.color]="'var(--text-primary)'">
+      {{ langService.t().products }}
+    </h1>
+    <div class="flex gap-2 w-full sm:w-auto">
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        [placeholder]="langService.t().search + '...'"
+        class="input text-sm py-2 px-3 flex-1 sm:w-64"
+      />
+      <button
+        (click)="openAddProductModal()"
+        class="px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap"
+        style="background: var(--color-primary-500); color: white"
+      >
+        + {{ langService.t().addProduct }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Products Table -->
+  <div
+    class="rounded-lg shadow overflow-hidden"
+    [style.background-color]="'var(--surface)'"
+    [style.border]="'1px solid var(--border-light)'"
+  >
+    <table class="min-w-full divide-y" [style.border-color]="'var(--border-light)'">
+      <thead [style.background-color]="'var(--bg-tertiary)'">
+        <tr>
+          <th
+            class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
+            [style.color]="'var(--text-secondary)'"
+          >
+            {{ langService.t().image }}
+          </th>
+          <th
+            class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
+            [style.color]="'var(--text-secondary)'"
+          >
+            {{ langService.t().productName }}
+          </th>
+          <th
+            class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
+            [style.color]="'var(--text-secondary)'"
+          >
+            {{ langService.t().description }}
+          </th>
+          <th
+            class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
+            [style.color]="'var(--text-secondary)'"
+          >
+            {{ langService.t().price }}
+          </th>
+          <th
+            class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
+            [style.color]="'var(--text-secondary)'"
+          >
+            {{ langService.t().stock }}
+          </th>
+          <th
+            class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider"
+            [style.color]="'var(--text-secondary)'"
+          >
+            {{ langService.t().actions }}
+          </th>
+        </tr>
+      </thead>
+      <tbody class="divide-y" [style.border-color]="'var(--border-light)'">
+        @if (isLoading()) { @for (item of [1, 2, 3, 4, 5]; track item) {
+        <tr>
+          <td class="px-6 py-4">
+            <app-ui-skeleton width="64px" height="64px" className="rounded"></app-ui-skeleton>
+          </td>
+          <td class="px-6 py-4"><app-ui-skeleton width="150px" height="20px"></app-ui-skeleton></td>
+          <td class="px-6 py-4"><app-ui-skeleton width="200px" height="20px"></app-ui-skeleton></td>
+          <td class="px-6 py-4"><app-ui-skeleton width="80px" height="20px"></app-ui-skeleton></td>
+          <td class="px-6 py-4"><app-ui-skeleton width="50px" height="20px"></app-ui-skeleton></td>
+          <td class="px-6 py-4"><app-ui-skeleton width="120px" height="32px"></app-ui-skeleton></td>
+        </tr>
+        } } @else if (products().length === 0) {
+        <tr>
+          <td colspan="6" class="px-6 py-4 text-center" [style.color]="'var(--text-secondary)'">
+            No products available
+          </td>
+        </tr>
+        } @else { @for (product of filteredProducts(); track product.id) {
+        <tr class="hover:bg-opacity-50" [style.background-color]="'var(--bg-secondary)'">
+          <td class="px-6 py-4 whitespace-nowrap">
+            @if (product.image) {
+            <img
+              [src]="product.image"
+              loading="lazy"
+              [alt]="product.name"
+              class="w-16 h-16 object-cover rounded"
+            />
+            } @else {
+            <div
+              class="w-16 h-16 bg-gray-200 rounded flex items-center justify-center text-gray-400"
+            >
+              No Image
+            </div>
+            }
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap font-medium" [style.color]="'var(--text-primary)'">
+            {{ product.name }}
+          </td>
+          <td class="px-6 py-4" [style.color]="'var(--text-secondary)'">
+            {{ product.description || 'N/A' }}
+          </td>
+          <td
+            class="px-6 py-4 whitespace-nowrap font-semibold"
+            [style.color]="'var(--text-primary)'"
+          >
+            LE{{ product.price.toFixed(2) }}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap" [style.color]="'var(--text-secondary)'">
+            {{ product.stock || 0 }}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+            <button
+              (click)="openEditProductModal(product)"
+              class="px-3 py-1 rounded transition-colors"
+              style="background: var(--color-primary-500); color: white"
+            >
+              {{ langService.t().edit }}
+            </button>
+            <button
+              (click)="deleteProduct(product)"
+              class="px-3 py-1 rounded transition-colors"
+              style="background: #ef4444; color: white"
+            >
+              {{ langService.t().delete }}
+            </button>
+          </td>
+        </tr>
+        } }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Product Form Modal -->
+@if (showProductForm()) {
+<app-product-form
+  [product]="selectedProduct()"
+  (onClose)="closeProductModal()"
+  (onSave)="handleProductSave()"
+/>
+}

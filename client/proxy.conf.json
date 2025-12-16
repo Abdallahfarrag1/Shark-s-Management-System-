@@ -1,0 +1,11 @@
+{
+  "/api/lightx": {
+    "target": "https://api.lightxeditor.com",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/api/lightx": "/external/api"
+    },
+    "logLevel": "debug"
+  }
+}
